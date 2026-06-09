@@ -1,28 +1,44 @@
-import { useEffect, useState } from "react";
-import api from "../src/services/api";
+import { GoogleLogin } from "@react-oauth/google";
+import { useState } from "react";
+import api from "./services/api";
+import { jwtDecode } from "jwt-decode";
 
 const App = () => {
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
+  const [token, setToken] = useState("");
+  const [message, setMessage] = useState("");
+  const [user, setUser] = useState();
 
-  async function getResponse() {
+  async function handleOnsubmit(response) {
+    const decoded = jwtDecode(response.credential);
+    setUser(decoded);
+    setToken(response.credential);
+
     try {
-      const res = await api.post("/data?name=ravan");
-      const result = res.data.message;
-      if (result) setMsg(result);
+      const res = await api.post("/data", {
+        name: decoded.name,
+        email: decoded.email,
+      });
+
+      const result = await res.data.message;
+      if (result) setMessage(result);
     } catch (error) {
-      setError(error.response.data.detail);
+      setMessage(error.response.detail);
     }
   }
 
-  useEffect(() => {
-    getResponse();
-  }, []);
   return (
     <div>
-      <h1>hello</h1>
-      <h1>{msg}</h1>
-      <h1>{error}</h1>
+      <h1>Google Auth</h1>
+      <GoogleLogin
+        onSuccess={handleOnsubmit}
+        onError={() => console.log("login Failed")}
+        width={200}
+        shape="rectangle"
+      />
+
+      <p>{token ? "login success " : "login failed"}</p>
+      {user && <img src={user.picture} alt="profile" />}
+      <h3>{message}</h3>
     </div>
   );
 };

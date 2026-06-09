@@ -1,5 +1,6 @@
 from fastapi import FastAPI ,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app=FastAPI()
 
@@ -11,15 +12,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class User(BaseModel):
+     name:str
+     email:str
+
 
 @app.post('/data')
-def greet(name:str):
-    if name != "jeevan":
-         raise HTTPException(
-        status_code=404,
-        detail="something went wrong"
-    )
-
-    return {
-        "message":"wellcome fastapi"
-    }
+def greet(user:User):
+     if user:
+          return {
+               "message":f"login succesfull with {user.name} and email {user.email}"
+          }
+     raise HTTPException(
+          status_code=400,
+          detail="LogIn Failed"
+     )
+    

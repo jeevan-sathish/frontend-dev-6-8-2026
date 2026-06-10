@@ -1,54 +1,38 @@
-import { useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
+
 import api from "./services/api";
+import { useEffect, useState } from "react";
 
 const App = () => {
   const [message, setMessage] = useState("");
-  const [user, setUser] = useState({
-    name: "",
-    email: "",
-  });
-  async function handleRequest(e) {
-    e.preventDefault();
-
-    try {
-      const res = await api.post("/connection", user);
-      const result = await res.data.message;
-      if (result) setMessage(result);
-    } catch (error) {
-      console.log(error.data.detail);
+  async function handleAuth(response) {
+    if (response.credential) {
+      try {
+        const res = await api.post("/googleAuth", {
+          token: response.credential,
+        });
+        localStorage.setItem("token", res.data.token);
+      } catch (error) {
+        setMessage(error.response.data.detail);
+      }
     }
   }
 
-  function handleChange(e) {
-    const { name, value } = e.target;
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-    setUser((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  }
-
+    if (token) {
+      setMessage("Already Logged In");
+    }
+  }, []);
   return (
     <div>
-      <h1>Neon Database Connection</h1>
-      <form onSubmit={handleRequest}>
-        <input
-          type="text"
-          placeholder="Enter your name"
-          name="name"
-          value={user.name}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          placeholder="Enter your email"
-          name="email"
-          value={user.email}
-          onChange={handleChange}
-        />
-        <button type="submit">submit</button>
-      </form>
-      <p>{message}</p>
+      <GoogleLogin
+        onSuccess={handleAuth}
+        onError={() => console.log("failed")}
+      />
+
+      <h1>{message}</h1>
     </div>
   );
 };

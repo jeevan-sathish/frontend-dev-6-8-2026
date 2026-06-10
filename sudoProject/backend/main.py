@@ -1,15 +1,17 @@
-from fastapi import FastAPI ,HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from services.user_schema import UserCreate
-from pydantic import BaseModel
-from database.db import engine
-from model.models import Base
 
-from model.models import User
+from database.db import engine, Base, SessionLocal, Google_client_id
+from model.user_model import User
+from services.google_schema import GoogleToken
 
-from database.db import SessionLocal
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
-app=FastAPI()
+from utils.jwt_handler import create_access_token
+
+
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,25 +21,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-    
-
-
 Base.metadata.create_all(bind=engine)
 
-@app.post('/connection')
-def db_connection(user:UserCreate):
-    print(user)
-    db=SessionLocal()
-    user_info =User(
-        name=user.name,
-        email =user.email
-    )
-    db.add(user_info)
-    db.commit()
-    db.refresh(user_info)
-    db.close()
 
-    return {
-        "message":"user inserted data"
-        
-    }
+@app.post("/googleAuth")
+def verify_user(payload: GoogleToken):
+
+    db = SessionLocal()
+
+    try:
+
+        user_info = id_token.verify_oauth2_token(
+            payload.token,
+            requests.Request(),
+            Google_client_id
+        )
+
+        existing_user = (
+            db.query(User)
+            .filter(User.email == user_info["email"])
+            .first()
+        )
+
+        if not existing_user:
+
+            new_user = User(
+                name=user_info["name"],
+                email=user_info["email"]
+            )
+
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+
+        token = create_access_token({
+            "sub": user_info["email"]
+        })
+
+        return {
+            "token": token,
+            "user": {
+                "name": user_info["name"],
+                "email": user_info["email"]
+            }
+        }
+
+    except Exception as e:
+
+        print("Error:", e)
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Google Token"
+        )
+
+    finally:
+        db.close()

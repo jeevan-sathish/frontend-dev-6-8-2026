@@ -1,14 +1,12 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
-
-DATABASE_URL =os.getenv("NEON_DATABASE_URL")
-
-engine = create_engine(DATABASE_URL)
+Google_client_id =os.getenv("GOOGLE_CLIENT_ID")
+engine = create_engine(os.getenv("NEON_DATABASE_URL"))
 
 SessionLocal =sessionmaker(
     autocommit=False,

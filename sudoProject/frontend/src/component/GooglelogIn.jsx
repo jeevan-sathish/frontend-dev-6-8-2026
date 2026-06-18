@@ -1,26 +1,18 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { useState } from "react";
-import api from "./services/api";
-import { jwtDecode } from "jwt-decode";
+import api from "../services/api";
 
 const GooglelogIn = () => {
-  const [token, setToken] = useState("");
   const [message, setMessage] = useState("");
-  const [user, setUser] = useState();
+  const [token, setToken] = useState("");
 
   async function handleOnsubmit(response) {
-    const decoded = jwtDecode(response.credential);
-    setUser(decoded);
-    setToken(response.credential);
-
     try {
-      const res = await api.post("/data", {
-        name: decoded.name,
-        email: decoded.email,
+      const res = await api.post("/login", {
+        credential: response.credential,
       });
-
-      const result = await res.data.message;
-      if (result) setMessage(result);
+      setMessage(res.data.message);
+      setToken(res.data.access_token);
     } catch (error) {
       setMessage(error.response.detail);
     }
@@ -36,9 +28,8 @@ const GooglelogIn = () => {
         shape="rectangle"
       />
 
-      <p>{token ? "login success " : "login failed"}</p>
-      {user && <img src={user.picture} alt="profile" />}
       <h3>{message}</h3>
+      <h1>{token ? "access_token" : "no access_token"}</h1>
     </div>
   );
 };

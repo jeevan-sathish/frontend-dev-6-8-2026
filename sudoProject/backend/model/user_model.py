@@ -2,8 +2,8 @@ from database.db import Base
 from sqlalchemy import Column,String,Integer
 
 
-class User(Base):
-    __tablename__="users"
+class DemoUser(Base):
+    __tablename__="demousers"
 
     id=Column(Integer,primary_key=True,index=True)
     name =Column(String)
